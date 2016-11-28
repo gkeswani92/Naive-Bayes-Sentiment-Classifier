@@ -1,17 +1,22 @@
-from tkinter.filedialog import askopenfile
-
 def naive_bayes_algo(str):
-    print("Sentence-->",str)
+    """
+    Classifies a single sentence into positive/negative/neutral
+    """
+    print("Sentence: ", str)
+
     words=str.split()
-    #print("Words:",words)
+    
     i=0
+    
     #Stores probability of current word
     pos=0
     neg=0
+    
     #Stores probability of overall sentence
     prob_pos=0
     prob_neg=0
-    #Variables for negation logic
+    
+    #Variables for negation logic (if a not precedes a good word --> bad word)
     current=""
     previous=""
     pre_previous=""
@@ -23,72 +28,46 @@ def naive_bayes_algo(str):
             
             #If word is found in the trained classifier
             if current == naive_bayes[i][0]:
-                print("Word being used--->",current)
-                pos=(naive_bayes[i][1]/(naive_bayes[i][1]+naive_bayes[i][2]))
-                #print("P(Positive|Original)",pos)
-                neg=(naive_bayes[i][2]/(naive_bayes[i][1]+naive_bayes[i][2]))
-                #print("P(Negative|Original)",neg)
+                pos = naive_bayes[i][1] * 1.0 / (naive_bayes[i][1]+naive_bayes[i][2])
+                neg = naive_bayes[i][2] * 1.0 / (naive_bayes[i][1]+naive_bayes[i][2])
                 
                 #If previous word is a negative word
                 if previous in negation_list:
-                    #print()
-                    #print("NEGATION DETECTED FOR ",previous," AND ",current)
-                    temp=pos
-                    pos=neg
-                    neg=temp
-                    #print("P(Positive|After Negation)",pos)
-                    #print("P(Negative|After Negation)",neg)
+                    pos, neg = neg, pos
 
                 #If previous word is an intensifier
                 for item in adv_list:
                     if item[0]==previous:
-                        print()
-                        #print("INTENSIFIER DETECTED: ",previous)
-                        pos=pos*item[1]
-                        neg=neg*item[1]
-                        #print("P(Positive|After Intensifier)",pos)
-                        #print("P(Negative|After Intensifier)",neg)
+                        pos = pos * item[1]
+                        neg = neg * item[1]
 
                         #If negation appears before intensifier
                         if pre_previous in negation_list:
-                            print()
-                            print("NEGATION DETECTED FOR ",pre_previous," AND ",current)
-                            temp=pos
-                            pos=neg
-                            neg=temp
-                            #print("P(Positive|After Negation)",pos)
-                            #print("P(Negative|After Negation)",neg)
-
-                print()
-                prob_pos=prob_pos+pos
-                prob_neg=prob_neg+neg 
+                            pos, neg = neg, pos
+                            
+                prob_pos = prob_pos + pos
+                prob_neg = prob_neg + neg 
                 
-            pre_previous=previous
-            previous=current
+            pre_previous = previous
+            previous = current
 
     #Logic for adding sentiment due to smileys
-    print()
     for current in words:
         if current in pos_smiley:
-            #print("POSITIVE SMILEY DETECTED")
-            prob_pos=prob_pos+1
+            prob_pos = prob_pos + 1
         if current in neg_smiley:
-            #print("NEGATIVE SMILEY DETECTED")
-            prob_neg=prob_neg+1
-    #print("P(Overall Positive)",prob_pos)
-    #print("P(Overall Negative)",prob_neg)
+            prob_neg = prob_neg + 1
  
-    if prob_pos>prob_neg and prob_pos-prob_neg>0.25:
-        print("Sentence is Positive")
-    elif prob_pos<prob_neg and prob_neg-prob_pos>0.25:
-        print("Sentence is Negative")
+    if prob_pos > prob_neg and prob_pos - prob_neg > 0.25:
+        print("Sentence is Positive with positive probability of {0}".format(prob_pos))
+    elif prob_pos < prob_neg and prob_neg - prob_pos > 0.25:
+        print("Sentence is Negative with negative probability of {0}".format(prob_neg))
     else:
-        print("Sentence is Neutral")
-    print("---------------------------------------------")
+        print("Sentence is Neutral with positive probability of {0}".format(prob_pos))
 
 #------------------------------------------------------------------------------
 
-#Opening the file to with the classifier
+#Opening the file to with the classifier and creating a list of the (word, positive_count, negative_count)
 classifier = open('Trained Set.txt','r')
 naive_bayes=[]
 for line in classifier:
@@ -104,16 +83,14 @@ for word in negation:
     negation_list.append(word[:-1])
 
 #Opening files with smileys and adding to list
-pos_file = open('Emoticon List Positive.txt','r',encoding='utf-8')
-neg_file = open('Emoticon List Negative.txt','r',encoding='utf-8')
+pos_file = open('Emoticon List Positive.txt', 'r')
+neg_file = open('Emoticon List Negative.txt', 'r')
 pos_smiley=[]
 neg_smiley=[]
 for word in pos_file:
     pos_smiley.append(word[:-1])
-pos_smiley.remove('\ufeff')
 for word in neg_file:
     neg_smiley.append(word[:-1])
-neg_smiley.remove('\ufeff')
 
 #Opening file containing adverb list and adding to list
 adv = open('Adverb List.txt','r')
